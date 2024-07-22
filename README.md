@@ -1,6 +1,7 @@
 # DLIMP
 
-Dataloading is my passion.
+This repo is been forked from https://github.com/kvablack/dlimp.
+I have make the dataset deterministic for large scale training.
 
 ## Installation
 Requires Python >= 3.8.
