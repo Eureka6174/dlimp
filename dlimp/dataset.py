@@ -61,7 +61,7 @@ class DLataset(tf.data.Dataset):
         """Applies some default options for performance."""
         options = tf.data.Options()
         options.autotune.enabled = True
-        options.deterministic = False
+        options.deterministic = True
         options.experimental_optimization.apply_default_optimizations = True
         options.experimental_optimization.map_fusion = True
         options.experimental_optimization.map_and_filter_fusion = True
@@ -130,6 +130,7 @@ class DLataset(tf.data.Dataset):
         split: str = "train",
         shuffle: bool = True,
         num_parallel_reads: int = tf.data.AUTOTUNE,
+        read_config: tfds.ReadConfig = None,
     ) -> "DLataset":
         """Creates a DLataset from the RLDS format (which is a special case of the TFDS format).
 
@@ -141,17 +142,18 @@ class DLataset(tf.data.Dataset):
             num_parallel_reads (int, optional): The number of tfrecord files to read in parallel. Defaults to AUTOTUNE. This
                 can use an excessive amount of memory if reading from cloud storage; decrease if necessary.
         """
+        if read_config is None:
+            read_config = tfds.ReadConfig()
+        read_config.skip_prefetch = True
+        read_config.num_parallel_calls_for_interleave_files = num_parallel_reads
+        read_config.interleave_cycle_length = num_parallel_reads
+
         dataset = _wrap(builder.as_dataset, False)(
             split=split,
             shuffle_files=shuffle,
             decoders={"steps": tfds.decode.SkipDecoding()},
-            read_config=tfds.ReadConfig(
-                skip_prefetch=True,
-                num_parallel_calls_for_interleave_files=num_parallel_reads,
-                interleave_cycle_length=num_parallel_reads,
-            ),
+            read_config=read_config,
         )._apply_options()
-
         dataset = dataset.enumerate().traj_map(_broadcast_metadata_rlds)
 
         return dataset
